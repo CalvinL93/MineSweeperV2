@@ -1,5 +1,6 @@
 import pygame
 import random
+import time
  
 # Define some colors
 BLACK = (0, 0, 0)
@@ -18,17 +19,19 @@ RIGHT = 3
 
 def play_minesweeper(difficulty): 
     if difficulty == 1:
-        windowSizeX = 255
-        windowSizeY = 255
-        gridSize = 10
+        windowSize = (255, 255)
+        gridSizeX = 10
+        gridSizeY = 10
         numberOfMines = 10
     elif difficulty == 2:
         windowSize = (505, 505)
-        gridSize = 20
+        gridSizeX = 20
+        gridSizeY = 20
         numberOfMines = 50
     elif difficulty == 3:
-        windowSize = (1005, 1005)
-        gridSize = 40
+        windowSize = (1005, 505)
+        gridSizeX = 20
+        gridSizeY = 40
         numberOfMines = 100
 
     pygame.init()
@@ -42,9 +45,9 @@ def play_minesweeper(difficulty):
 
     # Create grid for bombs
     grid = []
-    for row in range(gridSize):
+    for row in range(gridSizeX):
         grid.append([])
-        for column in range(gridSize):
+        for column in range(gridSizeY):
             # Marks all locations as empty
             grid[row].append(0)
 
@@ -52,8 +55,8 @@ def play_minesweeper(difficulty):
     mines = 0
     i = 0
     while i < numberOfMines:
-        x = random.randrange(0, gridSize)
-        y = random.randrange(0, gridSize)
+        x = random.randrange(0, gridSizeX)
+        y = random.randrange(0, gridSizeY)
         if grid[x][y] != 10:
             grid[x][y] = 10
             mines += 1
@@ -62,35 +65,35 @@ def play_minesweeper(difficulty):
             i -= 1
 
     # Add numbers to surrounding bomb locations on grid
-    for row in range(gridSize):
-        for column in range(gridSize):
+    for row in range(gridSizeX):
+        for column in range(gridSizeY):
             if grid[row][column] >= 10:
-                if row < gridSize - 1 and not grid[row + 1][column] == 10:
+                if row < gridSizeX - 1 and not grid[row + 1][column] == 10:
                     grid[row + 1][column] += 1
-                if column < gridSize - 1 and not grid[row][column + 1] == 10:
+                if column < gridSizeY - 1 and not grid[row][column + 1] == 10:
                     grid[row][column + 1] += 1
                 if row > 0 and not grid[row - 1][column] == 10:
                     grid[row - 1][column] += 1
                 if column > 0 and not grid[row][column - 1] == 10:
                     grid[row][column - 1] += 1
-                if row < gridSize - 1 and column < gridSize - 1 and not grid[row + 1][column + 1] == 10:
+                if row < gridSizeX - 1 and column < gridSizeY - 1 and not grid[row + 1][column + 1] == 10:
                     grid[row + 1][column + 1] += 1
-                if row < gridSize - 1 and column > 0 and not grid[row + 1][column - 1] == 10:
+                if row < gridSizeX - 1 and column > 0 and not grid[row + 1][column - 1] == 10:
                     grid[row + 1][column - 1] += 1
-                if row > 0 and column < gridSize - 1 and not grid[row - 1][column + 1] == 10:
+                if row > 0 and column < gridSizeY - 1 and not grid[row - 1][column + 1] == 10:
                     grid[row - 1][column + 1] += 1
                 if row > 0 and column > 0 and not grid[row - 1][column - 1] == 10:
                     grid[row - 1][column - 1] += 1
 
     # Display grid in console
-    for row in range(gridSize):
-        for column in range(gridSize):
+    for row in range(gridSizeX):
+        for column in range(gridSizeY):
             print(grid[row][column], end=" ") 
         print()
 
     # Find a location with no bomb for game start
-    for row in range(gridSize):
-        for column in range(gridSize):
+    for row in range(gridSizeX):
+        for column in range(gridSizeY):
             if grid[row][column] == 0:
                 xSafe = row
                 ySafe = column
@@ -101,7 +104,7 @@ def play_minesweeper(difficulty):
             for j in (-1, 0, 1):
                 new_x = x + i
                 new_y = y + j
-                if 0 <= new_x < gridSize and 0 <= new_y < gridSize:
+                if 0 <= new_x < gridSizeX and 0 <= new_y < gridSizeY:
                     if grid[new_x][new_y] == 0:
                         grid[new_x][new_y] = 9
                         check_adjacent_cells(new_x, new_y)
@@ -110,10 +113,17 @@ def play_minesweeper(difficulty):
 
     # Loop until the user clicks the close button or endgame condition met.
     done = False 
-    safeLocations = (gridSize * gridSize) - numberOfMines
+    # How many safe locations on map
+    safeLocations = (gridSizeX * gridSizeY) - numberOfMines
+    # If left or right click is happening
     left = False
     right = False
+    # Keep track of revealed squares to later determine if all mines have been found
     revealed = 0
+    # Timer
+    startTime = 0
+    # Mine Count
+    remaining_mines = numberOfMines
     
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
@@ -136,6 +146,9 @@ def play_minesweeper(difficulty):
                 x = pos[1] // 25
                 if event.button == LEFT:
                     left = True
+                    # Start Timer
+                    if start_time == 0:
+                        start_time = time.time()
                 if event.button == RIGHT:
                     right = True
 
@@ -196,12 +209,8 @@ def play_minesweeper(difficulty):
                 if grid[x][y] < 0:
                     for i in (-1, 0, 1):
                         for j in (-1, 0, 1):
-                            if x + i >= 0 and y + j >= 0 and x + i <= gridSize - 1 and y + j <= gridSize - 1:
-                                if grid[x + i][y + j] == 10:
-                                    print("Game Over")
-                                    pygame.time.wait(1000)
-                                    done = True
-                                elif grid[x + i][y + j] == 0:
+                            if x + i >= 0 and y + j >= 0 and x + i <= gridSizeX - 1 and y + j <= gridSizeY - 1:
+                                if grid[x + i][y + j] == 0:
                                     check_adjacent_cells(x, y)
                                 elif grid[x + i][y + j] > 0 and grid[x + i][y + j] < 9:
                                     grid[x + i][y + j] *= -1
@@ -236,8 +245,20 @@ def play_minesweeper(difficulty):
         # --- Drawing code should go here
         revealed = 0
         
-        for row in range(gridSize):
-            for column in range(gridSize):
+        # Draw top bar scoreboard
+        pygame.draw.rect(screen, GRAY, [0, 0, windowSize[0], 40])
+
+        # Timer
+        current_time = int(time.time() - start_time)
+        time_text = font.render(f'Time: {current_time}', True, BLACK)
+        screen.blit(time_text, (20, 10))
+
+        # Mine Count 
+        mines_text = font.render(f'Remaining Mines: {remaining_mines}', True, BLACK)
+        screen.blit(mines_text, (windowSize[0] - mines_text.get_width() - 20, 10))
+
+        for row in range(gridSizeX):
+            for column in range(gridSizeY):
                 color = GRAY
 
                 if grid[row][column] >= 50:
@@ -277,5 +298,3 @@ def play_minesweeper(difficulty):
     
     # Close the window and quit.
     pygame.quit()
-
-play_minesweeper(3)
