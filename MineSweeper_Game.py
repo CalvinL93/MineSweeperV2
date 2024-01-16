@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import sys
  
 # Define some colors
 BLACK = (0, 0, 0)
@@ -17,19 +18,21 @@ MARGIN = 5
 LEFT = 1
 RIGHT = 3
 
+top_bar_height = 40
+
 def play_minesweeper(difficulty): 
     if difficulty == 1:
-        windowSize = (255, 255)
+        windowSize = (255, 255 + top_bar_height)
         gridSizeX = 10
         gridSizeY = 10
         numberOfMines = 10
     elif difficulty == 2:
-        windowSize = (505, 505)
+        windowSize = (505, 505 + top_bar_height)
         gridSizeX = 20
         gridSizeY = 20
         numberOfMines = 50
     elif difficulty == 3:
-        windowSize = (1005, 505)
+        windowSize = (1005, 505 + top_bar_height)
         gridSizeX = 20
         gridSizeY = 40
         numberOfMines = 100
@@ -43,6 +46,7 @@ def play_minesweeper(difficulty):
 
     pygame.display.set_caption("MineSweeper")
 
+    # Build the board
     # Create grid for bombs
     grid = []
     for row in range(gridSizeX):
@@ -64,7 +68,7 @@ def play_minesweeper(difficulty):
         else:
             i -= 1
 
-    # Add numbers to surrounding bomb locations on grid
+    # Add numbers to surrounding bomb locations on grid, finds a mine and checks everything around it
     for row in range(gridSizeX):
         for column in range(gridSizeY):
             if grid[row][column] >= 10:
@@ -109,8 +113,44 @@ def play_minesweeper(difficulty):
                         grid[new_x][new_y] = 9
                         check_adjacent_cells(new_x, new_y)
                     if grid[new_x][new_y] > 0 and grid[new_x][new_y] < 9:
-                        grid[new_x][new_y] *= -1      
+                        grid[new_x][new_y] *= -1  
 
+    def win(current_time):
+        print("You Win!")
+        print(f"Your time: {current_time} seconds")
+    
+        # Display a pop-up message
+        pygame.quit()
+        pygame.init()
+        pygame.display.set_caption("MineSweeper")
+        
+        screen = pygame.display.set_mode((300, 100))
+        
+        font = pygame.font.SysFont('Calibri', 25, True, False)
+        # Render "You Win!" text
+        text_win = font.render("You Win!", True, BLACK)
+        text_rect_win = text_win.get_rect(center=(150, 30))
+        
+        # Render "Your time" text
+        text_time = font.render(f'Your time: {current_time} seconds', True, BLACK)
+        text_rect_time = text_time.get_rect(center=(150, 70))
+        
+        screen.fill(WHITE)
+        screen.blit(text_win, text_rect_win)
+        screen.blit(text_time, text_rect_time)
+        pygame.display.flip()
+        
+        # Wait for a key press to close the pop-up
+        waiting_for_key = True
+        while waiting_for_key:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting_for_key = False
+                elif event.type == pygame.KEYDOWN or pygame.MOUSEBUTTONDOWN:
+                    waiting_for_key = False
+        pygame.quit()
+        sys.exit()
+                    
     # Loop until the user clicks the close button or endgame condition met.
     done = False 
     # How many safe locations on map
@@ -121,7 +161,7 @@ def play_minesweeper(difficulty):
     # Keep track of revealed squares to later determine if all mines have been found
     revealed = 0
     # Timer
-    startTime = 0
+    start_time = 0
     # Mine Count
     remaining_mines = numberOfMines
     
@@ -130,7 +170,6 @@ def play_minesweeper(difficulty):
     
     # -------- Main Program Loop -----------
     while not done:
-        # --- Main event loop
         x = xSafe
         y = ySafe
 
@@ -142,8 +181,8 @@ def play_minesweeper(difficulty):
             # Click Down
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
-                y = pos[0] // 25
-                x = pos[1] // 25
+                y = (pos[1] - top_bar_height) // 25
+                x = pos[0] // 25
                 if event.button == LEFT:
                     left = True
                     # Start Timer
@@ -155,53 +194,56 @@ def play_minesweeper(difficulty):
             # Left Click Up
             elif event.type == pygame.MOUSEBUTTONUP and event.button == LEFT and not right:
                 pos = pygame.mouse.get_pos()
+                x = (pos[1] - top_bar_height) // 25
                 y = pos[0] // 25
-                x = pos[1] // 25
-                #print("Click: (%s,%s) Value: %s"%(x,y,grid[x][y]))
                 left = False
 
-                # If left click on bomb game over
-                if grid[x][y] == 10:
-                    print("Game Over")
-                    pygame.time.wait(1000)
-                    done = True
-                
-                # If next to bomb make number negative to later check and reveal
-                elif grid[x][y] > 0 and grid[x][y] < 9:
-                    grid[x][y] *= -1
-                    xSafe = x
-                    ySafe = y
-                
-                # If square is empty reveal surrounding empty squares
-                elif grid[x][y] == 0:
-                    grid[x][y] = 9
-                    xSafe = x
-                    ySafe = y
-                    check_adjacent_cells(x, y)
+                # Continue if click is in bounds
+                if 0 <= x < gridSizeX and 0 <= y < gridSizeY:
+                    # If left click on bomb game over
+                    if grid[x][y] == 10:
+                        print("Game Over")
+                        pygame.time.wait(1000)
+                        done = True
+                    
+                    # If next to bomb make number negative to later check and reveal
+                    elif grid[x][y] > 0 and grid[x][y] < 9:
+                        grid[x][y] *= -1
+                        xSafe = x
+                        ySafe = y
+                    
+                    # If square is empty reveal surrounding empty squares
+                    elif grid[x][y] == 0:
+                        grid[x][y] = 9
+                        xSafe = x
+                        ySafe = y
+                        check_adjacent_cells(x, y)
 
             # Right Click
             elif event.type == pygame.MOUSEBUTTONUP and event.button == RIGHT and not left:
                 pos = pygame.mouse.get_pos()
+                x = (pos[1] - top_bar_height) // 25
                 y = pos[0] // 25
-                x = pos[1] // 25
-                #print("Bomb Marked")
                 right = False
 
                 # Mark only squares that are unrevaled as possible bomb locations
                 if grid[x][y] == 10:
                     grid[x][y] = 20
+                    remaining_mines -= 1
                 elif grid[x][y] < 9 and grid[x][y] > 0:
                     grid[x][y] += 10
+                    remaining_mines -= 1
                 elif grid[x][y] == 20:
                     grid[x][y] = 10
+                    remaining_mines += 1
                 elif grid[x][y] < 20 and grid[x][y] > 10:
                     grid[x][y] -= 10
 
             # Both Left and Right Click
             elif event.type == pygame.MOUSEBUTTONUP and left and right:
                 pos = pygame.mouse.get_pos()
+                x = (pos[1] - top_bar_height) // 25
                 y = pos[0] // 25
-                x = pos[1] // 25
                 right = False
                 left = False
 
@@ -210,51 +252,43 @@ def play_minesweeper(difficulty):
                     for i in (-1, 0, 1):
                         for j in (-1, 0, 1):
                             if x + i >= 0 and y + j >= 0 and x + i <= gridSizeX - 1 and y + j <= gridSizeY - 1:
-                                if grid[x + i][y + j] == 0:
+                                if grid[x + i][y + j] == 10:
+                                    print("Game Over")
+                                    pygame.time.wait(1000)
+                                    done = True
+                                elif grid[x + i][y + j] == 0:
                                     check_adjacent_cells(x, y)
                                 elif grid[x + i][y + j] > 0 and grid[x + i][y + j] < 9:
                                     grid[x + i][y + j] *= -1
 
-                
-
-                
-        # If you want a background image, replace this clear with blit'ing the
-        # background image.
         screen.fill(BLACK)
 
-        # --- Game logic should go here
-
+        # Game Logic
         text = ""
         
         # If all mines found end game
         if safeLocations == revealed:
-            print("You Win")
+            #print("You Win")
+            win(current_time)
             pygame.time.wait(3000)
             done = True
-            
-        #print(revealed)
-        
-    
-        # --- Screen-clearing code goes here
-    
-        # Here, we clear the screen to white. Don't put other drawing commands
-        # above this, or they will be erased with this command.
-    
-        
-    
-        # --- Drawing code should go here
+   
         revealed = 0
         
+        # Drawing
         # Draw top bar scoreboard
         pygame.draw.rect(screen, GRAY, [0, 0, windowSize[0], 40])
 
         # Timer
-        current_time = int(time.time() - start_time)
+        if start_time == 0:
+            current_time = 0
+        else:
+            current_time = int(time.time() - start_time)
         time_text = font.render(f'Time: {current_time}', True, BLACK)
         screen.blit(time_text, (20, 10))
 
         # Mine Count 
-        mines_text = font.render(f'Remaining Mines: {remaining_mines}', True, BLACK)
+        mines_text = font.render(f'Mines: {remaining_mines}', True, BLACK)
         screen.blit(mines_text, (windowSize[0] - mines_text.get_width() - 20, 10))
 
         for row in range(gridSizeX):
@@ -282,14 +316,14 @@ def play_minesweeper(difficulty):
                 pygame.draw.rect(screen,
                                 color,
                                 [(MARGIN + WIDTH) * column + MARGIN,
-                                (MARGIN + HEIGHT) * row + MARGIN,
+                                (MARGIN + HEIGHT) * row  + top_bar_height + MARGIN,
                                 WIDTH,
                                 HEIGHT])
                 
                 # Ouputs number in box if it is negative indicating it is next to a bomb and has been clicked on
                 if grid[row][column] < 0:
                     text = font.render(str(abs(grid[row][column])), True, BLACK)
-                    text_rect = text.get_rect(center=((column * 25) + WIDTH // 2 + 5, (row * 25) + HEIGHT // 2 + 5))
+                    text_rect = text.get_rect(center=((column * 25) + WIDTH // 2 + 5, (row * 25) + HEIGHT // 2 + 5 + top_bar_height))
                     screen.blit(text, text_rect)
                 
         
@@ -298,3 +332,40 @@ def play_minesweeper(difficulty):
     
     # Close the window and quit.
     pygame.quit()
+
+    # if safeLocations == revealed:
+    #     print("You Win!")
+    #     print(f"Your time: {current_time} seconds")
+    
+    # # Display a pop-up message
+    # pygame.quit()
+    # pygame.init()
+    # pygame.display.set_caption("MineSweeper")
+    
+    # screen = pygame.display.set_mode((300, 100))
+    
+    # font = pygame.font.SysFont('Calibri', 25, True, False)
+    # # Render "You Win!" text
+    # text_win = font.render("You Win!", True, BLACK)
+    # text_rect_win = text_win.get_rect(center=(150, 30))
+    
+    # # Render "Your time" text
+    # text_time = font.render(f'Your time: {current_time} seconds', True, BLACK)
+    # text_rect_time = text_time.get_rect(center=(150, 70))
+    
+    # screen.fill(WHITE)
+    # screen.blit(text_win, text_rect_win)
+    # screen.blit(text_time, text_rect_time)
+    # pygame.display.flip()
+    
+    # # Wait for a key press to close the pop-up
+    # waiting_for_key = True
+    # while waiting_for_key:
+    #     for event in pygame.event.get():
+    #         if event.type == pygame.QUIT:
+    #             waiting_for_key = False
+    #         elif event.type == pygame.KEYDOWN:
+    #             waiting_for_key = False
+
+    # pygame.quit()
+    # sys.exit()
