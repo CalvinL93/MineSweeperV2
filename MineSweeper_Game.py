@@ -61,7 +61,9 @@ def play_minesweeper(difficulty):
     while i < numberOfMines:
         x = random.randrange(0, gridSizeX)
         y = random.randrange(0, gridSizeY)
-        if grid[x][y] != 10:
+        if mines == numberOfMines:
+            i = numberOfMines
+        elif grid[x][y] != 10:
             grid[x][y] = 10
             mines += 1
             i += 1
@@ -140,16 +142,47 @@ def play_minesweeper(difficulty):
         screen.blit(text_time, text_rect_time)
         pygame.display.flip()
         
+        pygame.time.wait(1500)
         # Wait for a key press to close the pop-up
         waiting_for_key = True
         while waiting_for_key:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    waiting_for_key = False
+                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.KEYDOWN or pygame.MOUSEBUTTONDOWN:
                     waiting_for_key = False
         pygame.quit()
-        sys.exit()
+        return current_time
+
+    def lose():
+        pygame.quit()
+        pygame.init()
+        pygame.display.set_caption("MineSweeper")
+        
+        screen = pygame.display.set_mode((300, 100))
+        
+        font = pygame.font.SysFont('Calibri', 25, True, False)
+        # Render "You lose" text
+        text_win = font.render("You Lose.", True, BLACK)
+        text_rect_win = text_win.get_rect(center=(150, 30))
+        
+        screen.fill(WHITE)
+        screen.blit(text_win, text_rect_win)
+        pygame.display.flip()
+        
+        pygame.time.wait(1500)
+        # Wait for a key press to close the pop-up
+        waiting_for_key = True
+        while waiting_for_key:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN or pygame.MOUSEBUTTONDOWN:
+                    waiting_for_key = False
+        pygame.quit()
+        return True
                     
     # Loop until the user clicks the close button or endgame condition met.
     done = False 
@@ -163,7 +196,7 @@ def play_minesweeper(difficulty):
     # Timer
     start_time = 0
     # Mine Count
-    remaining_mines = numberOfMines
+    remaining_mines = mines
     
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
@@ -202,9 +235,10 @@ def play_minesweeper(difficulty):
                 if 0 <= x < gridSizeX and 0 <= y < gridSizeY:
                     # If left click on bomb game over
                     if grid[x][y] == 10:
-                        print("Game Over")
-                        pygame.time.wait(1000)
-                        done = True
+                        if lose():
+                            done = True
+                            break
+                        #return
                     
                     # If next to bomb make number negative to later check and reveal
                     elif grid[x][y] > 0 and grid[x][y] < 9:
@@ -253,9 +287,9 @@ def play_minesweeper(difficulty):
                         for j in (-1, 0, 1):
                             if x + i >= 0 and y + j >= 0 and x + i <= gridSizeX - 1 and y + j <= gridSizeY - 1:
                                 if grid[x + i][y + j] == 10:
-                                    print("Game Over")
-                                    pygame.time.wait(1000)
-                                    done = True
+                                    if lose():
+                                        done = True
+                                        break
                                 elif grid[x + i][y + j] == 0:
                                     check_adjacent_cells(x, y)
                                 elif grid[x + i][y + j] > 0 and grid[x + i][y + j] < 9:
@@ -265,13 +299,10 @@ def play_minesweeper(difficulty):
 
         # Game Logic
         text = ""
-        
+
         # If all mines found end game
         if safeLocations == revealed:
-            #print("You Win")
-            win(current_time)
-            pygame.time.wait(3000)
-            done = True
+            return win(current_time)
    
         revealed = 0
         
@@ -332,40 +363,3 @@ def play_minesweeper(difficulty):
     
     # Close the window and quit.
     pygame.quit()
-
-    # if safeLocations == revealed:
-    #     print("You Win!")
-    #     print(f"Your time: {current_time} seconds")
-    
-    # # Display a pop-up message
-    # pygame.quit()
-    # pygame.init()
-    # pygame.display.set_caption("MineSweeper")
-    
-    # screen = pygame.display.set_mode((300, 100))
-    
-    # font = pygame.font.SysFont('Calibri', 25, True, False)
-    # # Render "You Win!" text
-    # text_win = font.render("You Win!", True, BLACK)
-    # text_rect_win = text_win.get_rect(center=(150, 30))
-    
-    # # Render "Your time" text
-    # text_time = font.render(f'Your time: {current_time} seconds', True, BLACK)
-    # text_rect_time = text_time.get_rect(center=(150, 70))
-    
-    # screen.fill(WHITE)
-    # screen.blit(text_win, text_rect_win)
-    # screen.blit(text_time, text_rect_time)
-    # pygame.display.flip()
-    
-    # # Wait for a key press to close the pop-up
-    # waiting_for_key = True
-    # while waiting_for_key:
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             waiting_for_key = False
-    #         elif event.type == pygame.KEYDOWN:
-    #             waiting_for_key = False
-
-    # pygame.quit()
-    # sys.exit()
