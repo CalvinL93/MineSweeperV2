@@ -20,6 +20,7 @@ RIGHT = 3
 
 top_bar_height = 40
 
+# def play_minesweeper(difficulty, xStart = 0, yStart = 0):
 def play_minesweeper(difficulty): 
     if difficulty == 1:
         windowSize = (255, 255 + top_bar_height)
@@ -63,6 +64,7 @@ def play_minesweeper(difficulty):
         y = random.randrange(0, gridSizeY)
         if mines == numberOfMines:
             i = numberOfMines
+        # elif grid[x][y] != 10 and grid[xStart][yStart] != 10:
         elif grid[x][y] != 10:
             grid[x][y] = 10
             mines += 1
@@ -97,6 +99,10 @@ def play_minesweeper(difficulty):
             print(grid[row][column], end=" ") 
         print()
 
+    # if xStart > 0 and yStart > 0:
+    #     xSafe = xStart
+    #     ySafe = yStart
+    # else:
     # Find a location with no bomb for game start
     for row in range(gridSizeX):
         for column in range(gridSizeY):
@@ -197,6 +203,8 @@ def play_minesweeper(difficulty):
     start_time = 0
     # Mine Count
     remaining_mines = mines
+
+    # firstClick = True
     
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
@@ -206,6 +214,8 @@ def play_minesweeper(difficulty):
         x = xSafe
         y = ySafe
 
+        # if xStart > 0 and yStart > 0:
+        #     firstClick = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -234,12 +244,16 @@ def play_minesweeper(difficulty):
                 # Continue if click is in bounds
                 if 0 <= x < gridSizeX and 0 <= y < gridSizeY:
                     # If left click on bomb game over
-                    if grid[x][y] == 10:
-                        if lose():
-                            done = True
-                            break
-                        #return
+                    # if firstClick and grid[x][y] == 10:
+                    #     rScore = play_minesweeper(difficulty, x, y)
+                    #     if rScore > 0 and rScore < 9999:
+                    #         return rScore
+                    #     else: return
                     
+                    if grid[x][y] == 10:
+                        lose()
+                        done = True
+                        
                     # If next to bomb make number negative to later check and reveal
                     elif grid[x][y] > 0 and grid[x][y] < 9:
                         grid[x][y] *= -1
@@ -252,6 +266,8 @@ def play_minesweeper(difficulty):
                         xSafe = x
                         ySafe = y
                         check_adjacent_cells(x, y)
+
+                    firstClick = False
 
             # Right Click
             elif event.type == pygame.MOUSEBUTTONUP and event.button == RIGHT and not left:
